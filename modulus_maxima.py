@@ -4,7 +4,7 @@ from collections import namedtuple
 
 import numpy as np
 from scipy import optimize
-import cwtmm.good_cwt as gcw
+import pycwtmm.good_cwt as gcw
 
 rng = np.random.default_rng()
 nearest = lambda a, v: np.argmin(np.abs(a - v))
