@@ -75,6 +75,11 @@ def plot_summary(wm: mm.Wtmmizer, fig: matplotlib.figure.Figure=None):
         title='Wavelet transform + modulus maxima',
         yscale='log'
     )
+    ricker_cone_of_influence(
+        wm.time_mids, wm.scales, wm.cwt_matrix,
+        wt_ax, facecolor='orange', alpha=0.2,
+        edgecolor='blue'
+    )
 
     plot_multifractal(
         hoelder=wm.multifractals.hoelder.true,
@@ -122,7 +127,7 @@ def ricker_cone_of_influence(
     # left portion
     ax.fill_betweenx(y=s, x1=0, x2=coi, **kw)
     # right portion
-    ax.fill_betweenx(y=s, x1=t[-1] - coi, x2=t[-1], **kw)
+    ax.fill_betweenx(y=s, x1=t[-1] - coi, x2=t[-1] + np.diff(t)[-1], **kw)
 
 
 def plot_exponents_singularities(
