@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 
 from scipy.io import readsav
 
-import cwtmm.modulus_maxima as cmm
-import cwtmm.plotting as cpl
-import cwtmm.good_cwt as gcwt
+import pycwtmm.modulus_maxima as cmm
+import pycwtmm.plotting as cpl
 
 
 '''
@@ -32,16 +31,10 @@ moments = np.linspace(-8, 8, num=50)
 
 for k in want:
     v = dat[k]
-    wt = gcwt.cwt(v, scales)
-    cfl = cmm.ContinuousWaveletTransformModulusMaximaConfligurimator(
-        wt,
-        scales,
-        np.arange(v.size),
-        v
-    )
-    cfl.connect_wavelet_modulus_maxima(dp, dt)
-    cfl.compute_multifractal(moments)
-    cwtmms[k] = cfl
+    wm = cmm.Wtmmizer(np.arange(v.size), v, scales)
+    wm.connect_wavelet_modulus_maxima(dp, dt)
+    wm.compute_multifractal(moments)
+    cwtmms[k] = wm
     print('done', k)
 
 
@@ -50,8 +43,8 @@ axs = axs.flatten()
 
 for (k, v), ax in zip(cwtmms.items(), axs):
     cpl.plot_multifractal(
-        hoelder=v.exponents_singularity_spectra['hoelder'].true,
-        hausdorff=v.exponents_singularity_spectra['hausdorff'].true,
+        hoelder=v.multifractals.hoelder.true,
+        hausdorff=v.multifractals.hausdorff.true,
         ax=ax
     )
     ax.set(title=k, xlim=(0, 1.5), ylim=(0, 1.5))
