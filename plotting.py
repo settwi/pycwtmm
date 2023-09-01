@@ -1,9 +1,14 @@
 import copy
 import matplotlib as mpl
 import matplotlib.axes
+import matplotlib.gridspec as gspc
 import matplotlib.pyplot as plt
+import matplotlib.figure
 import numpy as np
 from scipy import ndimage
+
+from . import modulus_maxima as mm
+
 
 def plot_cwt_modulus_maxima(
     x: np.ndarray,
@@ -30,10 +35,12 @@ def plot_cwt_modulus_maxima(
         cm.set_bad(mm_color)
         cm.set_under(mm_color)
 
+    no_inf = np.nan_to_num(mag, neginf=0)
+    real_min = no_inf[no_inf > 0].min()
     norm = norm or mpl.colors.SymLogNorm(
-        vmin=0,
+        linthresh=5000*real_min,
+        vmin=real_min,
         vmax=mag.max(),
-        linthresh=1
     )
     def extend(a):
         return np.concatenate((a, [a[-1] + (a[-1] - a[-2])]))
@@ -41,6 +48,61 @@ def plot_cwt_modulus_maxima(
     # messes up with log-spaced bins
     plot_obj = ax.pcolormesh(extend(x), extend(y), mag, norm=norm, cmap=cm)
     return fig.colorbar(plot_obj, ax=ax)
+
+
+def plot_summary(wm: mm.Wtmmizer, fig: matplotlib.figure.Figure=None):
+    fig = fig or plt.figure(figsize=(16, 12))
+
+    gs = gspc.GridSpec(nrows=2, ncols=2, figure=fig)
+    wt_ax = fig.add_subplot(gs[0,:])
+    sig_ax = fig.add_subplot(gs[1,0])
+    multifrac_ax = fig.add_subplot(gs[1, 1])
+
+
+    plot_cwt_modulus_maxima(
+        x=wm.time_mids,
+        y=wm.scales,
+        cwt=wm.modulus,
+        ax=wt_ax,
+        fig=fig,
+        mm=wm.maxima_connected(),
+        cmap='bone',
+        mm_color='red'
+    )
+    wt_ax.set(
+        xlabel='Signal time (time bin)',
+        ylabel='Wavelet characteristic width (time bin)',
+        title='Wavelet transform + modulus maxima',
+        yscale='log'
+    )
+
+    plot_multifractal(
+        hoelder=wm.multifractals.hoelder.true,
+        hausdorff=wm.multifractals.hausdorff.true,
+        ax=multifrac_ax
+    )
+    multifrac_ax.set(
+        xlabel='Hoelder dimension $h(q)$',
+        ylabel='Hausdorff dimension $D(h(q))$',
+        title='Multifractal spectrum',
+        xlim=(1e-5, 1.5),
+        ylim=(0, 1.5)
+    )
+    multifrac_ax.axvline(0.5, color='green')
+
+    sig_ax.plot(wm.time_mids, wm.raw_signal)
+    sig_ax.set(
+        xlabel='Time (time bins)',
+        ylabel='Signal (arb)',
+        title='Original signal'
+    )
+
+    return dict(
+        fig=fig,
+        mf_ax=multifrac_ax,
+        sig_ax=sig_ax,
+        wt_ax=wt_ax
+    )
 
 
 def ricker_cone_of_influence(
